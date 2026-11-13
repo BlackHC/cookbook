@@ -431,6 +431,9 @@ def run_sampling_preflight(
             rank=cfg.lora_rank,
             alpha=cfg.lora_alpha,
         )
+        if cfg.init_from_checkpoint:
+            # rldyi: evaluate a trained checkpoint through the same rollout path.
+            training_client.load_state(cfg.init_from_checkpoint).result()
         sampling_client, _snapshot = _create_snapshot_sampling_client(
             service=service,
             training_client=training_client,

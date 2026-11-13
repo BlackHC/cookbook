@@ -259,7 +259,7 @@ class HarborSettings:
 
     tito: TITOSidecarSettings
     environment: str = "docker"
-    """``docker`` or ``e2b``."""
+    """``docker``, ``e2b`` or ``modal``."""
     trial_config: str | Path | Mapping[str, Any] | None = None
     """Harbor ``TrialConfig`` YAML path or mapping."""
     trials_dir: str | Path | None = None
@@ -277,8 +277,8 @@ class HarborSettings:
     tool_timeout_seconds: int = DEFAULT_HARNESS_TOOL_TIMEOUT_SECONDS
 
     def __post_init__(self) -> None:
-        if self.environment not in {"docker", "e2b"}:
-            raise ValueError("Harbor environment must be docker or e2b")
+        if self.environment not in {"docker", "e2b", "modal"}:
+            raise ValueError("Harbor environment must be docker, e2b or modal")
         if self.e2b_template_manifest is not None and self.environment != "e2b":
             raise ValueError("e2b_template_manifest requires the E2B environment")
         if not self.reward_key:

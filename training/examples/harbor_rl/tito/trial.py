@@ -529,6 +529,11 @@ def _build_trial_config(
         if _task_uses_compose(task_config) or environment.get("extra_docker_compose"):
             raise ValueError("Harbor E2B does not support Docker Compose tasks")
         environment["type"] = harbor.EnvironmentType.E2B
+    elif harbor_environment == "modal":
+        # rldyi: Modal sandboxes. Harbor builds each task image with
+        # modal.Image.from_dockerfile (or from_registry for prebuilt images)
+        # and caches it by content, so force_build stays off (see below).
+        environment["type"] = harbor.EnvironmentType.MODAL
     else:
         raise ValueError(f"unsupported Harbor environment {harbor_environment!r}")
     # Remove trial-local containers and volumes after verification. A task's

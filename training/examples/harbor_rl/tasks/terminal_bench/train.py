@@ -101,6 +101,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=Path,
         default=Path(f"./harbor_terminal_bench_serverless_{int(time.time())}"),
     )
+    parser.add_argument(
+        "--environment", choices=("docker", "e2b", "modal"), default="docker",
+        help="Harbor sandbox backend for task trials.",
+    )
     parser.add_argument("--sampling-only", action="store_true")
     parser.add_argument("--calibration-task", action="append", default=[])
     parser.add_argument("--calibration-completions", type=int, default=1)
@@ -172,7 +176,7 @@ def run() -> None:
     factory = partial(
         make_rollout_fn,
         harbor=common.harbor_settings(
-            args, run_dir=run_dir, environment="docker", trials_dir=trials_dir
+            args, run_dir=run_dir, environment=args.environment, trials_dir=trials_dir
         ),
         version=args.opencode_version,
     )
