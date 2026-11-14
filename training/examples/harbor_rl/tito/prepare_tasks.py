@@ -39,11 +39,11 @@ _NODE_22_INSTALL = r"""RUN set -eu; \
 _PYTHON_INSTALL = r"""RUN set -eu; \
  if command -v apt-get >/dev/null 2>&1; then \
    apt-get update; \
-   apt-get install -y --no-install-recommends ca-certificates python3 python3-pip python3-venv; \
+   apt-get install -y --no-install-recommends curl ca-certificates python3 python3-pip python3-venv; \
    apt-get clean; \
    rm -rf /var/lib/apt/lists/*; \
  elif command -v dnf >/dev/null 2>&1; then \
-   dnf install -y ca-certificates python3 python3-pip; \
+   dnf install -y curl ca-certificates python3 python3-pip; \
    dnf clean all; \
  else \
    echo 'unsupported base image: expected apt-get or dnf' >&2; \
@@ -54,8 +54,15 @@ _PYTHON_INSTALL = r"""RUN set -eu; \
 # stdlib is the image's. `lzma` is checked explicitly because the sidecar
 # bundle ships LZMA-compressed: a base image built without liblzma would
 # otherwise fail per trial at bundle extraction instead of here, at build.
-_SIDECAR_PYTHON_INSTALL = r"""python3 -c 'import sys; assert sys.version_info >= (3, 10), sys.version'; \
- python3 -m venv /opt/fireworks-tito; \
+# rldyi: the pinned numpy==2.4.6 needs Python >= 3.11, but e.g. ubuntu:22.04 ships 3.10. When the
+# image's python3 is older, build the venv on a uv-managed standalone CPython 3.12 instead
+# (python-build-standalone includes lzma).
+_SIDECAR_PYTHON_INSTALL = r"""if python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)'; then \
+   python3 -m venv /opt/fireworks-tito; \
+ else \
+   curl -LsSf https://astral.sh/uv/0.9.5/install.sh | env UV_INSTALL_DIR=/opt/fireworks-uv UV_NO_MODIFY_PATH=1 sh; \
+   UV_PYTHON_INSTALL_DIR=/opt/fireworks-uv/python /opt/fireworks-uv/uv venv --seed --python 3.12 --python-preference only-managed /opt/fireworks-tito; \
+ fi; \
  /opt/fireworks-tito/bin/python -m pip install --no-cache-dir \
    aiohttp==3.14.3 \
    httpx==0.28.1 \
