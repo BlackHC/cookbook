@@ -414,9 +414,17 @@ def task_name_from_row(row: Mapping[str, Any]) -> str:
     return str(name) if name else "unknown-task"
 
 
+# rldyi: Harbor derives backend object names as ``f"{trial_name}__agent"`` etc., and Modal
+# rejects object names longer than 64 characters, so trial names stay <= 64 - len("__agent").
+_MAX_TRIAL_NAME = 56
+
+
 def _safe_trial_name(run_id: str) -> str:
-    normalized = re.sub(r"[^A-Za-z0-9_.-]+", "-", run_id).strip("-.")
-    return (normalized or "harbor-tito")[-180:]
+    normalized = re.sub(r"[^A-Za-z0-9_.-]+", "-", run_id).strip("-.") or "harbor-tito"
+    if len(normalized) <= _MAX_TRIAL_NAME:
+        return normalized
+    digest = hashlib.sha256(normalized.encode()).hexdigest()[:8]
+    return normalized[: _MAX_TRIAL_NAME - 9].rstrip("-.") + "-" + digest
 
 
 def load_harbor_trial_config(
